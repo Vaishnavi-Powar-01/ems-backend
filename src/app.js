@@ -38,9 +38,11 @@ app.use("/api/leaves", leaveRoutes);
 app.use("/api/roles", roleRoutes);
 
 /* ===================== TEST ROUTE ===================== */
-
+const createAdmin = require("./seed/adminSeed");
+createAdmin();
 app.get("/", (req, res) => {
   res.send("EMS API Running...");
 });
+
 
 module.exports = app;
