@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 
-require("./config/db");
+const db = require("./config/db");
 
 const app = express();
 
@@ -36,8 +36,7 @@ app.use("/api/leaves", leaveRoutes);
 app.use("/api/roles", roleRoutes);
 
 /* ===================== TEST ROUTE (ADD THIS HERE) ===================== */
-
-const db = require("./config/db"); // IMPORTANT ADD THIS
+ // IMPORTANT ADD THIS
 
 app.get("/test-db", (req, res) => {
   db.query("SELECT NOW()", (err, result) => {
