@@ -4,7 +4,7 @@ const cors = require("cors");
 const db = require("./config/db");
 
 const app = express();
-
+console.log("🔥 app.js is loaded");
 // Middleware
 app.use(cors({
   origin: process.env.CLIENT_URL,
