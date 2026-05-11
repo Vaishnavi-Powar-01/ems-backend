@@ -1,25 +1,59 @@
-const bcrypt = require("bcrypt");
-const db = require("../config/db"); // adjust path if needed
+const bcrypt = require("bcryptjs");
+const db = require("../config/db");
 
 const seedAdmin = async () => {
-  const name = "Admin User";
-  const email = "admin@gmail.com";
-  const password = "admin123";
+  try {
+    const email = "admin@gmail.com";
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+    // CHECK EXISTING
+    db.query(
+      "SELECT * FROM users WHERE email = ?",
+      [email],
+      async (err, result) => {
+        if (err) {
+          console.log(err);
+          process.exit();
+        }
 
-  db.query(
-    "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
-    [name, email, hashedPassword, "superadmin"],
-    (err) => {
-      if (err) {
-        console.log("Error / already exists:", err.message);
-      } else {
-        console.log("Admin created successfully");
+        if (result.length > 0) {
+          console.log("Admin already exists");
+          process.exit();
+        }
+
+        // HASH PASSWORD
+        const hashedPassword = await bcrypt.hash("admin123", 10);
+
+        // INSERT ADMIN
+        const query = `
+          INSERT INTO users
+          (name, email, password, role, department)
+          VALUES (?, ?, ?, ?, ?)
+        `;
+
+        db.query(
+          query,
+          [
+            "Admin User",
+            "admin@gmail.com",
+            hashedPassword,
+            "admin",
+            "IT"
+          ],
+          (err, result) => {
+            if (err) {
+              console.log(err);
+              process.exit();
+            }
+
+            console.log("Admin created successfully");
+            process.exit();
+          }
+        );
       }
-      process.exit();
-    }
-  );
+    );
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 seedAdmin();
