@@ -1,4 +1,3 @@
-
 const mysql = require("mysql2");
 
 const pool = mysql.createPool({
@@ -14,7 +13,8 @@ pool.getConnection((err, connection) => {
     console.log("Database Connection Failed", err);
   } else {
     console.log("MySQL Connected (Pool)");
+    connection.release();
   }
 });
 
-module.exports = connection;
+module.exports = pool;
