@@ -14,6 +14,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/uploads", express.static("uploads"));
+
 /* ===================== IMPORT ROUTES ===================== */
 
 const attendanceRoutes = require("./routes/attendanceRoutes");
@@ -34,7 +35,18 @@ app.use("/api/expenses", expenseRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/roles", roleRoutes);
 
-/* ===================== TEST ROUTE ===================== */
+/* ===================== TEST ROUTE (ADD THIS HERE) ===================== */
+
+const db = require("./config/db"); // IMPORTANT ADD THIS
+
+app.get("/test-db", (req, res) => {
+  db.query("SELECT NOW()", (err, result) => {
+    if (err) return res.json(err);
+    res.json(result);
+  });
+});
+
+/* ===================== HOME ROUTE ===================== */
 
 app.get("/", (req, res) => {
   res.send("EMS API Running...");
