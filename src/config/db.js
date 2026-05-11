@@ -1,5 +1,7 @@
 const mysql = require('mysql2');
+const fs = require('fs');
 
+// For Aiven MySQL, you need to download their CA certificate or disable strict SSL checking
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -12,25 +14,34 @@ const pool = mysql.createPool({
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
   ssl: {
-    // Aiven requires SSL connection
-    rejectUnauthorized: true  // Set to true for production
+    // Option 1: Accept self-signed certificates (Quick fix)
+    rejectUnauthorized: false,
+    
+    // Option 2: If you have the CA certificate (More secure)
+    // ca: fs.readFileSync('./ca.pem'), // Download from Aiven dashboard
   }
 });
 
-// Convert to promise-based pool
 const promisePool = pool.promise();
 
-// Test the connection immediately
+// Test the connection
 const testConnection = async () => {
   try {
     const connection = await promisePool.getConnection();
     console.log('✅ Database connected successfully to Aiven MySQL');
-    console.log(`📊 Database: ${process.env.DB_NAME || 'defaultdb'}`);
     connection.release();
+    
+    // Test a simple query
+    const [rows] = await promisePool.query('SELECT VERSION() as version');
+    console.log(`📊 MySQL Version: ${rows[0].version}`);
+    
   } catch (error) {
     console.error('❌ Database connection failed:', error.message);
-    console.error('Please check your database credentials and network settings');
-    process.exit(1); // Exit if database connection fails
+    console.error('🔧 Troubleshooting tips:');
+    console.error('   - Check if host/port are correct');
+    console.error('   - Verify credentials in Aiven dashboard');
+    console.error('   - Ensure IP is whitelisted (0.0.0.0/0 for testing)');
+    process.exit(1);
   }
 };
 
