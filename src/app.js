@@ -7,10 +7,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://ems-frontend-three-ivory.vercel.app/"
-  ],
+  origin: process.env.CLIENT_URL,
   credentials: true
 }));
 app.use(express.json());
