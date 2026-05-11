@@ -6,10 +6,17 @@ require("./config/db");
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://your-frontend-domain.vercel.app"
+  ],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use("/uploads", express.static("uploads"));
 /* ===================== IMPORT ROUTES ===================== */
 
 const attendanceRoutes = require("./routes/attendanceRoutes");
