@@ -30,34 +30,37 @@ function getDistanceInMeters(lat1, lon1, lat2, lon2) {
 }
 
 
-// -------------------- SAFE PARSE --------------------
+// -------------------- SAFE LAT LNG --------------------
 function parseLatLng(latitude, longitude) {
   const lat = Number(latitude);
   const lng = Number(longitude);
 
-  if (isNaN(lat) || isNaN(lng)) {
-    return null;
-  }
+  if (isNaN(lat) || isNaN(lng)) return null;
 
   return { lat, lng };
 }
 
 
-// -------------------- PUNCH IN --------------------
+// -------------------- IST TODAY DATE FIX --------------------
+function getTodayDate() {
+  return new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Kolkata",
+  });
+}
+
+
+// ===================== PUNCH IN =====================
 exports.punchIn = (req, res) => {
   const user_id = req.user.id;
   const { latitude, longitude } = req.body;
   const selfie = req.file ? req.file.filename : null;
 
   const coords = parseLatLng(latitude, longitude);
-
   if (!coords) {
-    return res.status(400).json({
-      message: "Invalid GPS coordinates",
-    });
+    return res.status(400).json({ message: "Invalid GPS coordinates" });
   }
 
-  // 🔥 GEO CHECK
+  // GEO CHECK
   const distance = getDistanceInMeters(
     OFFICE_LOCATION.latitude,
     OFFICE_LOCATION.longitude,
@@ -65,19 +68,18 @@ exports.punchIn = (req, res) => {
     coords.lng
   );
 
-  console.log("Punch In Distance:", distance);
-
   if (distance > ALLOWED_RADIUS) {
     return res.status(400).json({
-      message: `You are ${Math.round(distance)}m away. Allowed: 500m only.`,
+      message: `You are ${Math.round(distance)}m away. Allowed 500m only.`,
     });
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayDate();
 
   const checkQuery = `
-    SELECT * FROM attendance
+    SELECT id FROM attendance
     WHERE user_id = ? AND attendance_date = ?
+    LIMIT 1
   `;
 
   db.query(checkQuery, [user_id, today], (err, result) => {
@@ -85,7 +87,7 @@ exports.punchIn = (req, res) => {
 
     if (result.length > 0) {
       return res.status(400).json({
-        message: "Already Punched In Today",
+        message: "Already punched in today",
       });
     }
 
@@ -110,25 +112,23 @@ exports.punchIn = (req, res) => {
 };
 
 
-// -------------------- PUNCH OUT --------------------
+// ===================== PUNCH OUT =====================
 exports.punchOut = (req, res) => {
   const user_id = req.user.id;
   const { latitude, longitude } = req.body;
   const selfie = req.file ? req.file.filename : null;
 
   const coords = parseLatLng(latitude, longitude);
-
   if (!coords) {
-    return res.status(400).json({
-      message: "Invalid GPS coordinates",
-    });
+    return res.status(400).json({ message: "Invalid GPS coordinates" });
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayDate();
 
   const getQuery = `
     SELECT * FROM attendance
     WHERE user_id = ? AND attendance_date = ?
+    LIMIT 1
   `;
 
   db.query(getQuery, [user_id, today], (err, result) => {
@@ -136,7 +136,7 @@ exports.punchOut = (req, res) => {
 
     if (result.length === 0) {
       return res.status(400).json({
-        message: "Please Punch In First",
+        message: "Please punch in first",
       });
     }
 
@@ -144,19 +144,17 @@ exports.punchOut = (req, res) => {
 
     if (attendance.punch_out) {
       return res.status(400).json({
-        message: "Already Punched Out",
+        message: "Already punched out",
       });
     }
 
-    // 🔥 GEO CHECK
+    // GEO CHECK
     const distance = getDistanceInMeters(
       OFFICE_LOCATION.latitude,
       OFFICE_LOCATION.longitude,
       coords.lat,
       coords.lng
     );
-
-    console.log("Punch Out Distance:", distance);
 
     if (distance > ALLOWED_RADIUS) {
       return res.status(400).json({
@@ -170,9 +168,7 @@ exports.punchOut = (req, res) => {
     const diffMs = punchOutTime - punchInTime;
 
     const hours = Math.floor(diffMs / (1000 * 60 * 60));
-    const minutes = Math.floor(
-      (diffMs % (1000 * 60 * 60)) / (1000 * 60)
-    );
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 
     const work_hours = `${hours}h ${minutes}m`;
 
@@ -208,7 +204,7 @@ exports.punchOut = (req, res) => {
 };
 
 
-// -------------------- MY ATTENDANCE --------------------
+// ===================== MY ATTENDANCE =====================
 exports.getMyAttendance = (req, res) => {
   const user_id = req.user.id;
 
@@ -226,13 +222,13 @@ exports.getMyAttendance = (req, res) => {
 };
 
 
-// -------------------- ADMIN ATTENDANCE --------------------
+// ===================== ADMIN ATTENDANCE =====================
 exports.getAllAttendance = (req, res) => {
   const query = `
     SELECT attendance.*, users.name, users.department
     FROM attendance
     JOIN users ON attendance.user_id = users.id
-    ORDER BY attendance.attendance_date DESC
+    ORDER BY attendance_date DESC
   `;
 
   db.query(query, (err, result) => {
