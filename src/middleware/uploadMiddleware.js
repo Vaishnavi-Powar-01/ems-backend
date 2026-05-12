@@ -1,43 +1,22 @@
 const multer = require("multer");
-
 const path = require("path");
+const fs = require("fs");
 
+const uploadPath = path.join(__dirname, "..", "uploads", "attendance");
 
-// STORAGE
+// create folder if not exists (VERY IMPORTANT for Render)
+if (!fs.existsSync(uploadPath)) {
+  fs.mkdirSync(uploadPath, { recursive: true });
+}
+
 const storage = multer.diskStorage({
-  
   destination: (req, file, cb) => {
-    cb(null, "../uploads/selfies");
+    cb(null, uploadPath);
   },
 
   filename: (req, file, cb) => {
-    cb(
-      null,
-      Date.now() + path.extname(file.originalname)
-    );
+    cb(null, Date.now() + path.extname(file.originalname));
   },
 });
 
-
-// FILE FILTER
-const fileFilter = (req, file, cb) => {
-  
-  if (
-    file.mimetype.startsWith("image")
-  ) {
-    cb(null, true);
-  } else {
-    cb(
-      new Error("Only images allowed"),
-      false
-    );
-  }
-};
-
-
-const upload = multer({
-  storage,
-  fileFilter,
-});
-
-module.exports = upload;
+module.exports = multer({ storage });

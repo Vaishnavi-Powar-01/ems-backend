@@ -4,7 +4,7 @@ const cors = require("cors");
 const db = require("./config/db");
 
 const app = express();
-
+const path = require("path");
 console.log("🔥 app.js is loaded");
 
 // ===================== CORS =====================
@@ -23,8 +23,10 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/uploads", express.static("uploads"));
-
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"))
+);
 /* ===================== IMPORT ROUTES ===================== */
 
 const attendanceRoutes = require("./routes/attendanceRoutes");
