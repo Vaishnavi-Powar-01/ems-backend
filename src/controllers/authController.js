@@ -5,10 +5,9 @@ const generateToken = require("../utils/generateToken");
 // Role mapping (adjust these IDs based on your roles table)
 const roleMap = {
   1: 'admin',
-  2: 'superadmin',
-  3: 'hr',
-  4: 'manager',
-  5: 'employee'
+  2: 'hr',
+  3: 'manager',
+  4: 'employee'
 };
 
 // REGISTER
@@ -31,7 +30,6 @@ exports.register = async (req, res) => {
     // VALIDATE ROLE
     const validRoles = [
       "admin",
-      "superadmin",
       "hr",
       "manager",
       "employee"
