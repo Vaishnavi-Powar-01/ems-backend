@@ -1,6 +1,6 @@
 const OFFICE_LOCATION = {
-  latitude: 16.270867,
-  longitude: 74.361626,
+  latitude: 18.605573256150308,
+  longitude: 73.78439712030278,
 };
 
 const ALLOWED_RADIUS = 500; // meters
