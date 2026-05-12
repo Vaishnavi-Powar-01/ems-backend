@@ -111,7 +111,6 @@ router.get("/:id", (req, res) => {
     [req.params.id],
     (error, results) => {
       if (error) {
-        console.log(error);
         return res.status(500).json({ success: false, message: "Server Error" });
       }
 
@@ -121,7 +120,6 @@ router.get("/:id", (req, res) => {
 
       const role = results[0];
 
-      // Use parsePermissions — this was the crash point with old comma-separated data
       const permissions = parsePermissions(role.permissions);
 
       res.json({
@@ -130,6 +128,7 @@ router.get("/:id", (req, res) => {
         description: role.description,
         status: role.status,
         permissions,
+        permissions_count: permissions.length,   // ✅ FIX HERE
         created_at: role.created_at || null,
       });
     }
