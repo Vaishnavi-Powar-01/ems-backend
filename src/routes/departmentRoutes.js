@@ -3,50 +3,21 @@ const router = express.Router();
 const db = require("../config/db");
 
 // ===================== GET ALL =====================
-router.put("/:id", (req, res) => {
-  const { id } = req.params;
+router.get("/", (req, res) => {
+  const query = "SELECT * FROM departments ORDER BY id DESC";
 
-  const {
-    departmentName,
-    departmentCode,
-    managerName,
-    description,
-  } = req.body;
-
-  const query = `
-    UPDATE departments 
-    SET 
-      department_name = ?,
-      department_code = ?,
-      manager_name = ?,
-      description = ?,
-    WHERE id = ?
-  `;
-
-  db.query(
-    query,
-    [
-      departmentName,
-      departmentCode || null,
-      managerName || null,
-      description || null,
-      id,
-    ],
-    (err) => {
-      if (err) {
-        return res.status(500).json({
-          success: false,
-          message: err.message,
-        });
-      }
-
-      res.json({
-        success: true,
-        message: "Department updated successfully",
+  db.query(query, (err, results) => {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        message: err.message,
       });
     }
-  );
+
+    res.json(results);
+  });
 });
+
 
 // ===================== GET ONE =====================
 router.get("/:id", (req, res) => {
@@ -78,12 +49,8 @@ router.get("/:id", (req, res) => {
 
 // ===================== CREATE =====================
 router.post("/add", (req, res) => {
-  const {
-    departmentName,
-    departmentCode,
-    managerName,
-    description,
-  } = req.body;
+  const { departmentName, departmentCode, managerName, description } =
+    req.body;
 
   if (!departmentName) {
     return res.status(400).json({
@@ -95,18 +62,12 @@ router.post("/add", (req, res) => {
   const query = `
     INSERT INTO departments 
     (department_name, department_code, manager_name, description)
-    VALUES (?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?)
   `;
 
   db.query(
     query,
-    [
-      departmentName,
-      departmentCode || null,
-      managerName || null,
-      description || null,
-      "Active",
-    ],
+    [departmentName, departmentCode, managerName, description],
     (err, result) => {
       if (err) {
         return res.status(500).json({
@@ -128,7 +89,6 @@ router.post("/add", (req, res) => {
 // ===================== UPDATE =====================
 router.put("/:id", (req, res) => {
   const { id } = req.params;
-
   const {
     departmentName,
     departmentCode,
@@ -138,21 +98,17 @@ router.put("/:id", (req, res) => {
 
   const query = `
     UPDATE departments 
-    SET 
-      department_name = ?,
-      department_code = ?,
-      manager_name = ?,
-      description = ?,
-    WHERE id = ?
+    SET department_name=?, department_code=?, manager_name=?, description=?
+    WHERE id=?
   `;
 
   db.query(
     query,
     [
       departmentName,
-      departmentCode || null,
-      managerName || null,
-      description || null,
+      departmentCode,
+      managerName,
+      description,
       id,
     ],
     (err) => {
