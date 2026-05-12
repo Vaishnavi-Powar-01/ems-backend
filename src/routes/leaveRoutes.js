@@ -57,6 +57,8 @@ const storage =
 const upload =
   multer({ storage });
 
+  
+
 
 // APPLY LEAVE
 router.post(

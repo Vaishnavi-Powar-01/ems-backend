@@ -2,54 +2,27 @@ const db = require("../config/db");
 const bcrypt = require("bcryptjs");
 const generateToken = require("../utils/generateToken");
 
-// Role mapping (adjust these IDs based on your roles table)
-const roleMap = {
-  1: 'admin',
-  2: 'hr',
-  3: 'manager',
-  4: 'employee'
-};
-
 // REGISTER
 exports.register = async (req, res) => {
   try {
+    let { name, email, password, role, department } = req.body;
 
-    let {
-      name,
-      email,
-      password,
-      role,
-      department
-    } = req.body;
-
-    // ROLE MAPPING
-    if (role && !isNaN(role)) {
-      role = roleMap[role] || "employee";
-    }
+    // ✅ FIX: Normalize role to lowercase string (frontend sends string like "admin")
+    // The old roleMap block was dead code — role arrives as a string, not a number
+    role = role?.toLowerCase().trim() || "employee";
 
     // VALIDATE ROLE
-    const validRoles = [
-      "admin",
-      "hr",
-      "manager",
-      "employee"
-    ];
+    const validRoles = ["admin", "hr", "manager", "employee"];
 
-    if (role && !validRoles.includes(role)) {
+    if (!validRoles.includes(role)) {
       return res.status(400).json({
-        message: "Invalid role"
+        message: `Invalid role "${role}". Must be one of: ${validRoles.join(", ")}`,
       });
     }
 
-    // CHECK USER
-    const checkUserQuery =
-      "SELECT * FROM users WHERE email = ?";
-
-    const [existingUsers] =
-      await db.promise().query(
-        checkUserQuery,
-        [email]
-      );
+    // CHECK IF USER ALREADY EXISTS
+    const checkUserQuery = "SELECT * FROM users WHERE email = ?";
+    const [existingUsers] = await db.promise().query(checkUserQuery, [email]);
 
     if (existingUsers.length > 0) {
       return res.status(400).json({
@@ -58,35 +31,28 @@ exports.register = async (req, res) => {
     }
 
     // HASH PASSWORD
-    const hashedPassword =
-      await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // INSERT USER
     const insertQuery = `
-      INSERT INTO users
-      (name, email, password, role, department)
+      INSERT INTO users (name, email, password, role, department)
       VALUES (?, ?, ?, ?, ?)
     `;
 
-    await db.promise().query(
-      insertQuery,
-      [
-        name,
-        email,
-        hashedPassword,
-        role,
-        department,
-      ]
-    );
+    await db.promise().query(insertQuery, [
+      name,
+      email,
+      hashedPassword,
+      role,
+      department,
+    ]);
 
     res.status(201).json({
       message: "User registered successfully",
     });
 
   } catch (error) {
-
     console.error("Registration error:", error);
-
     res.status(500).json({
       message: "Server error",
       error: error.message,
@@ -103,7 +69,7 @@ exports.login = (req, res) => {
 
     db.query(query, [email], async (err, result) => {
       if (err) {
-        return res.status(500).json(err);
+        return res.status(500).json({ message: "Database error", error: err });
       }
 
       if (result.length === 0) {
@@ -123,22 +89,24 @@ exports.login = (req, res) => {
         });
       }
 
-      // TOKEN
+      // GENERATE TOKEN
       const token = generateToken(user);
 
+      // ✅ Normalize role on the way out so frontend always gets a clean string
       res.status(200).json({
         token,
         user: {
           id: user.id,
           name: user.name,
           email: user.email,
-          role: user.role,
+          role: user.role?.toLowerCase().trim(),
           department: user.department,
         },
       });
     });
+
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json(error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
