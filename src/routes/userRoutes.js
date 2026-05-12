@@ -11,6 +11,7 @@ const {
   deleteUser,
 } = require("../controllers/userController");
 
+
 // ================= GET ALL USERS =================
 router.get(
   "/",
@@ -18,6 +19,7 @@ router.get(
   roleMiddleware("admin"),
   getUsers
 );
+
 
 // ================= CREATE USER =================
 router.post(
@@ -27,6 +29,7 @@ router.post(
   createUser
 );
 
+
 // ================= UPDATE USER =================
 router.put(
   "/:id",
@@ -34,6 +37,7 @@ router.put(
   roleMiddleware("admin"),
   updateUser
 );
+
 
 // ================= DELETE USER =================
 router.delete(
