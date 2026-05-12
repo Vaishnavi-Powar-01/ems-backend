@@ -14,67 +14,84 @@ const roleMap = {
 // REGISTER
 exports.register = async (req, res) => {
   try {
-    let { name, email, password, role, department } = req.body;
 
-    // Convert role ID to ENUM value if role is a number
+    let {
+      name,
+      email,
+      password,
+      role,
+      department
+    } = req.body;
+
+    // ROLE MAPPING
     if (role && !isNaN(role)) {
-      role = roleMap[role] || 'employee';
+      role = roleMap[role] || "employee";
     }
 
-    // Validate role is valid ENUM value
-    const validRoles = ['admin', 'superadmin', 'hr', 'manager', 'employee'];
+    // VALIDATE ROLE
+    const validRoles = [
+      "admin",
+      "superadmin",
+      "hr",
+      "manager",
+      "employee"
+    ];
+
     if (role && !validRoles.includes(role)) {
       return res.status(400).json({
-        message: "Invalid role. Must be one of: admin, superadmin, hr, manager, employee"
+        message: "Invalid role"
       });
     }
 
     // CHECK USER
-    const checkUserQuery = "SELECT * FROM users WHERE email = ?";
+    const checkUserQuery =
+      "SELECT * FROM users WHERE email = ?";
 
-    db.query(checkUserQuery, [email], async (err, result) => {
-      if (err) {
-        return res.status(500).json(err);
-      }
-
-      if (result.length > 0) {
-        return res.status(400).json({
-          message: "User already exists",
-        });
-      }
-
-      // HASH PASSWORD
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      const insertQuery = `
-        INSERT INTO users 
-        (name, email, password, role, department)
-        VALUES (?, ?, ?, ?, ?)
-      `;
-
-      db.query(
-        insertQuery,
-        [name, email, hashedPassword, role, department],
-        (err, result) => {
-          if (err) {
-            console.error("Database error:", err);
-            return res.status(500).json({
-              message: "Database error",
-              error: err.message
-            });
-          }
-
-          res.status(201).json({
-            message: "User registered successfully",
-          });
-        }
+    const [existingUsers] =
+      await db.promise().query(
+        checkUserQuery,
+        [email]
       );
+
+    if (existingUsers.length > 0) {
+      return res.status(400).json({
+        message: "User already exists",
+      });
+    }
+
+    // HASH PASSWORD
+    const hashedPassword =
+      await bcrypt.hash(password, 10);
+
+    // INSERT USER
+    const insertQuery = `
+      INSERT INTO users
+      (name, email, password, role, department)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+
+    await db.promise().query(
+      insertQuery,
+      [
+        name,
+        email,
+        hashedPassword,
+        role,
+        department,
+      ]
+    );
+
+    res.status(201).json({
+      message: "User registered successfully",
     });
+
   } catch (error) {
+
     console.error("Registration error:", error);
+
     res.status(500).json({
       message: "Server error",
-      error: error.message
+      error: error.message,
     });
   }
 };
