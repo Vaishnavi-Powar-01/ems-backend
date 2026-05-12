@@ -221,15 +221,24 @@ exports.getMyAttendance = (req, res) => {
 // ================= ALL ATTENDANCE =================
 exports.getAllAttendance = (req, res) => {
   const query = `
-    SELECT attendance.*, users.name, users.email
+    SELECT 
+      attendance.*,
+      users.name AS employee_name,
+      roles.role_name AS role_name,
+      departments.department_name AS department_name
     FROM attendance
-    JOIN users ON users.id = attendance.user_id
-    ORDER BY attendance_date DESC
+    JOIN users ON attendance.user_id = users.id
+    LEFT JOIN roles ON users.role = roles.id
+    LEFT JOIN departments ON users.department = departments.id
+    ORDER BY attendance.attendance_date DESC
   `;
 
   db.query(query, (err, result) => {
-    if (err) return res.status(500).json({ message: "DB error" });
+    if (err) {
+      console.log(err);
+      return res.status(500).json(err);
+    }
 
-    res.json(result);
+    res.status(200).json(result);
   });
 };
