@@ -1,11 +1,13 @@
 const db = require("../config/db");
 const { OFFICE_LOCATION, ALLOWED_RADIUS } = require("../config/officeLocation");
 
-// ---------------- DISTANCE ----------------
+
+// ================= DISTANCE FUNCTION =================
 function getDistanceInMeters(lat1, lon1, lat2, lon2) {
   const toRad = (v) => (v * Math.PI) / 180;
 
   const R = 6371e3;
+
   const φ1 = toRad(lat1);
   const φ2 = toRad(lat2);
   const Δφ = toRad(lat2 - lat1);
@@ -13,18 +15,20 @@ function getDistanceInMeters(lat1, lon1, lat2, lon2) {
 
   const a =
     Math.sin(Δφ / 2) ** 2 +
-    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+    Math.cos(φ1) * Math.cos(φ2) *
+    Math.sin(Δλ / 2) ** 2;
 
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
-// ---------------- SAFE DATE (FIXED) ----------------
+
+// ================= SAFE DATE =================
 function getToday() {
-  return new Date()
-    .toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+  return new Date().toISOString().split("T")[0];
 }
 
-// ---------------- SAFE PARSE ----------------
+
+// ================= SAFE LAT LNG =================
 function parseLatLng(lat, lng) {
   const latitude = Number(lat);
   const longitude = Number(lng);
@@ -34,22 +38,18 @@ function parseLatLng(lat, lng) {
   return { latitude, longitude };
 }
 
+
 // ================= PUNCH IN =================
 exports.punchIn = (req, res) => {
   try {
     const user_id = req.user?.id;
-
-    if (!user_id) {
-      return res.status(401).json({ message: "Unauthorized user" });
-    }
+    if (!user_id) return res.status(401).json({ message: "Unauthorized" });
 
     const { latitude, longitude } = req.body;
     const selfie = req.file?.filename;
 
     const coords = parseLatLng(latitude, longitude);
-    if (!coords) {
-      return res.status(400).json({ message: "Invalid location" });
-    }
+    if (!coords) return res.status(400).json({ message: "Invalid location" });
 
     const distance = getDistanceInMeters(
       OFFICE_LOCATION.latitude,
@@ -60,7 +60,7 @@ exports.punchIn = (req, res) => {
 
     if (distance > ALLOWED_RADIUS) {
       return res.status(400).json({
-        message: `Outside office range (${Math.round(distance)}m)`
+        message: `Outside allowed range (${Math.round(distance)}m)`
       });
     }
 
@@ -71,8 +71,8 @@ exports.punchIn = (req, res) => {
 
     db.query(checkQuery, [user_id, today], (err, result) => {
       if (err) {
-        console.error("DB ERROR:", err);
-        return res.status(500).json({ message: "Database error" });
+        console.error(err);
+        return res.status(500).json({ message: "DB error" });
       }
 
       if (result.length > 0) {
@@ -96,7 +96,7 @@ exports.punchIn = (req, res) => {
         ],
         (err) => {
           if (err) {
-            console.error("INSERT ERROR:", err);
+            console.error(err);
             return res.status(500).json({ message: "Insert failed" });
           }
 
@@ -110,22 +110,18 @@ exports.punchIn = (req, res) => {
   }
 };
 
+
 // ================= PUNCH OUT =================
 exports.punchOut = (req, res) => {
   try {
     const user_id = req.user?.id;
-
-    if (!user_id) {
-      return res.status(401).json({ message: "Unauthorized user" });
-    }
+    if (!user_id) return res.status(401).json({ message: "Unauthorized" });
 
     const { latitude, longitude } = req.body;
     const selfie = req.file?.filename;
 
     const coords = parseLatLng(latitude, longitude);
-    if (!coords) {
-      return res.status(400).json({ message: "Invalid location" });
-    }
+    if (!coords) return res.status(400).json({ message: "Invalid location" });
 
     const today = getToday();
 
@@ -157,12 +153,11 @@ exports.punchOut = (req, res) => {
 
       if (distance > ALLOWED_RADIUS) {
         return res.status(400).json({
-          message: `Outside range (${Math.round(distance)}m)`
+          message: `Outside allowed range (${Math.round(distance)}m)`
         });
       }
 
-      const diff =
-        new Date() - new Date(record.punch_in);
+      const diff = new Date() - new Date(record.punch_in);
 
       const hours = Math.floor(diff / 3600000);
       const minutes = Math.floor((diff % 3600000) / 60000);
@@ -202,4 +197,39 @@ exports.punchOut = (req, res) => {
     console.error(error);
     res.status(500).json({ message: "Server crash" });
   }
+};
+
+
+// ================= MY ATTENDANCE =================
+exports.getMyAttendance = (req, res) => {
+  const user_id = req.user.id;
+
+  const query = `
+    SELECT * FROM attendance
+    WHERE user_id = ?
+    ORDER BY attendance_date DESC
+  `;
+
+  db.query(query, [user_id], (err, result) => {
+    if (err) return res.status(500).json({ message: "DB error" });
+
+    res.json(result);
+  });
+};
+
+
+// ================= ALL ATTENDANCE =================
+exports.getAllAttendance = (req, res) => {
+  const query = `
+    SELECT attendance.*, users.name, users.email
+    FROM attendance
+    JOIN users ON users.id = attendance.user_id
+    ORDER BY attendance_date DESC
+  `;
+
+  db.query(query, (err, result) => {
+    if (err) return res.status(500).json({ message: "DB error" });
+
+    res.json(result);
+  });
 };

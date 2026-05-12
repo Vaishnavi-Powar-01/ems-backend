@@ -1,67 +1,43 @@
 const express = require("express");
+const router = express.Router();
 
-const router =
-  express.Router();
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
-const multer =
-  require("multer");
-
-const path =
-  require("path");
-
-const authMiddleware =
-  require(
-    "../middleware/authMiddleware"
-  );
-
-const roleMiddleware =
-  require(
-    "../middleware/roleMiddleware"
-  );
+const authMiddleware = require("../middleware/authMiddleware");
+const roleMiddleware = require("../middleware/roleMiddleware");
 
 const {
   punchIn,
   punchOut,
   getMyAttendance,
   getAllAttendance,
-} = require(
-  "../controllers/attendanceController"
-);
+} = require("../controllers/attendanceController");
 
 
+// ================= CREATE UPLOAD FOLDER SAFELY =================
+const uploadDir = "uploads/attendance";
 
-// MULTER
-const storage =
-  multer.diskStorage({
-
-    destination:
-      (req, file, cb) => {
-
-        cb(
-          null,
-          "src/uploads/attendance"
-        );
-
-      },
-
-    filename:
-      (req, file, cb) => {
-
-        cb(
-          null,
-          Date.now() +
-            path.extname(
-              file.originalname
-            )
-        );
-
-      },
-  });
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 
-const upload =
-  multer({ storage });
+// ================= MULTER CONFIG =================
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
 
+const upload = multer({ storage });
+
+
+// ================= ROUTES =================
 
 // PUNCH IN
 router.post(
@@ -71,7 +47,6 @@ router.post(
   punchIn
 );
 
-
 // PUNCH OUT
 router.put(
   "/punch-out",
@@ -80,7 +55,6 @@ router.put(
   punchOut
 );
 
-
 // MY ATTENDANCE
 router.get(
   "/my-attendance",
@@ -88,18 +62,12 @@ router.get(
   getMyAttendance
 );
 
-
-// ADMIN ALL
+// ALL ATTENDANCE (ADMIN/HR/MANAGER)
 router.get(
   "/all",
   authMiddleware,
-  roleMiddleware(
-    "admin",
-    "hr",
-    "manager"
-  ),
+  roleMiddleware("admin", "hr", "manager"),
   getAllAttendance
 );
 
-module.exports =
-  router;
+module.exports = router;
