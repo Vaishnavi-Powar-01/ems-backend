@@ -22,24 +22,13 @@ exports.register = async (req, res) => {
       department
     } = req.body;
 
-    // ROLE MAPPING
-    if (role && !isNaN(role)) {
-      role = roleMap[role] || "employee";
-    }
 
     // VALIDATE ROLE
-    const validRoles = [
-      "admin",
-      "hr",
-      "manager",
-      "employee"
-    ];
+   const validRoles = ["admin", "hr", "manager", "employee"];
 
-    if (role && !validRoles.includes(role)) {
-      return res.status(400).json({
-        message: "Invalid role"
-      });
-    }
+if (!validRoles.includes(role)) {
+  role = "employee";
+}
 
     // CHECK USER
     const checkUserQuery =
