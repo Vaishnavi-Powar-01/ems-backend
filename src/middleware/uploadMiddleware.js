@@ -2,13 +2,10 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-// ✅ FIX: Use process.cwd() so path is always relative to where node server.js runs
-// This resolves to /opt/render/project/src/uploads on Render
-// and to your local project root/uploads locally
 const BASE_UPLOAD_PATH = path.join(process.cwd(), "uploads");
 
-// ✅ Auto-create all needed subfolders on startup
-const subFolders = ["attendance", "leaves", "expenses"];
+// Auto-create all needed subfolders on startup
+const subFolders = ["attendance", "leaves", "expenses", "misc"];
 
 subFolders.forEach((folder) => {
   const fullPath = path.join(BASE_UPLOAD_PATH, folder);
@@ -18,24 +15,18 @@ subFolders.forEach((folder) => {
   }
 });
 
-// ✅ Dynamically pick subfolder based on route
-// Routes must include a hint in req.baseUrl or req.originalUrl
-// e.g. /api/attendance → saves to uploads/attendance/
-//      /api/leaves     → saves to uploads/leaves/
-//      /api/expenses   → saves to uploads/expenses/
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const url = req.originalUrl || "";
 
-    let subFolder = "misc"; // fallback
+    let subFolder = "misc";
 
     if (url.includes("attendance")) subFolder = "attendance";
-    else if (url.includes("leave"))  subFolder = "leaves";
+    else if (url.includes("leave")) subFolder = "leaves";
     else if (url.includes("expense")) subFolder = "expenses";
 
     const dest = path.join(BASE_UPLOAD_PATH, subFolder);
 
-    // Ensure folder exists (safety net)
     if (!fs.existsSync(dest)) {
       fs.mkdirSync(dest, { recursive: true });
     }
@@ -49,11 +40,34 @@ const storage = multer.diskStorage({
   },
 });
 
+// ✅ FIXED: attendance = images only | leaves & expenses = images + PDF
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith("image")) {
-    cb(null, true);
+  const url = req.originalUrl || "";
+
+  const isImage = file.mimetype.startsWith("image");
+  const isPDF = file.mimetype === "application/pdf";
+
+  if (url.includes("attendance")) {
+    // Selfies only — no PDFs
+    if (isImage) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only images allowed for attendance"), false);
+    }
+  } else if (url.includes("leave") || url.includes("expense")) {
+    // Medical certificates, receipts — images + PDF allowed
+    if (isImage || isPDF) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only JPG, PNG, and PDF files are allowed"), false);
+    }
   } else {
-    cb(new Error("Only images allowed"), false);
+    // Fallback: images only
+    if (isImage) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only images allowed"), false);
+    }
   }
 };
 

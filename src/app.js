@@ -9,7 +9,6 @@ const app = express();
 
 console.log("🔥 app.js is loaded");
 
-// ✅ FIX: Ensure uploads folder exists at startup (process.cwd() = project root on Render)
 const uploadsPath = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsPath)) {
   fs.mkdirSync(uploadsPath, { recursive: true });
