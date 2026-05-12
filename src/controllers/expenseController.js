@@ -149,52 +149,42 @@ exports.getAllExpenses = (
 
 
 // UPDATE EXPENSE STATUS
-exports.updateExpenseStatus = (
-  req,
-  res
-) => {
-
+exports.updateExpenseStatus = (req, res) => {
   const { id } = req.params;
+  const { status } = req.body;
+  const approved_by = req.user.id;
 
-  const {
-    status
-  } = req.body;
+  // ✅ validate status
+  const allowedStatus = ["pending", "approved", "rejected"];
 
-  const approved_by =
-    req.user.id;
-
+  if (!allowedStatus.includes(status)) {
+    return res.status(400).json({
+      message: "Invalid status value",
+    });
+  }
 
   const query = `
     UPDATE expenses
-    SET
-      status = ?,
-      approved_by = ?
+    SET status = ?, approved_by = ?
     WHERE id = ?
   `;
 
-
-  db.query(
-    query,
-    [
-      status,
-      approved_by,
-      id,
-    ],
-    (err, result) => {
-
-      if (err) {
-
-        console.log(err);
-
-        return res.status(500).json(err);
-
-      }
-
-      res.status(200).json({
-        message:
-          "Expense Updated",
-      });
-
+  db.query(query, [status, approved_by, id], (err, result) => {
+    if (err) {
+      console.log(err);
+      return res.status(500).json(err);
     }
-  );
+
+    // ✅ IMPORTANT: check if row updated
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        message: "Expense not found",
+      });
+    }
+
+    res.status(200).json({
+      message: "Expense Updated Successfully",
+      updated: true,
+    });
+  });
 };
