@@ -1,72 +1,60 @@
 const db = require("../config/db");
 
-// ================= GET USERS =================
+
+// GET ALL USERS
 exports.getUsers = (req, res) => {
+
   const query = `
-    SELECT 
-      u.id,
-      u.name,
-      u.email,
-      u.role_id,
-      u.department_id,
-      r.name AS role_name,
-      d.department_name,
-      u.created_at
-    FROM users u
-    LEFT JOIN roles r ON u.role_id = r.id
-    LEFT JOIN departments d ON u.department_id = d.id
-    ORDER BY u.created_at DESC
+    SELECT
+      id,
+      name,
+      email,
+      role,
+      department,
+      created_at
+    FROM users
+    ORDER BY created_at DESC
   `;
 
   db.query(query, (err, result) => {
     if (err) return res.status(500).json(err);
+
     res.status(200).json(result);
   });
 };
 
 
-// ================= CREATE USER =================
+// CREATE USER (NEW)
 exports.createUser = (req, res) => {
-  const { name, email, password, role_id, department_id } = req.body;
+
+  const { name, email, role, department } = req.body;
 
   const query = `
-    INSERT INTO users (name, email, password, role_id, department_id)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO users (name, email, role, department)
+    VALUES (?, ?, ?, ?)
   `;
 
-  db.query(
-    query,
-    [name, email, password, role_id, department_id || null],
-    (err) => {
-      if (err) return res.status(500).json(err);
+  db.query(query, [name, email, role, department], (err) => {
+    if (err) return res.status(500).json(err);
 
-      res.status(201).json({ message: "User created successfully" });
-    }
-  );
+    res.status(201).json({ message: "User created successfully" });
+  });
 };
 
 
-// ================= UPDATE USER =================
+// UPDATE USER (NEW)
 exports.updateUser = (req, res) => {
-  const { id } = req.params;
-  const { name, email, password, role_id, department_id } = req.body;
 
-  let query = `
+  const { id } = req.params;
+  const { name, email, role, department } = req.body;
+
+  const query = `
     UPDATE users
-    SET name=?, email=?, role_id=?, department_id=?
+    SET name=?, email=?, role=?, department=?
+    WHERE id=?
   `;
 
-  const params = [name, email, role_id, department_id || null];
-
-  if (password) {
-    query += `, password=?`;
-    params.push(password);
-  }
-
-  query += ` WHERE id=?`;
-  params.push(id);
-
-  db.query(query, params, (err) => {
+  db.query(query, [name, email, role, department, id], (err) => {
     if (err) return res.status(500).json(err);
 
     res.status(200).json({ message: "User updated successfully" });
@@ -74,8 +62,9 @@ exports.updateUser = (req, res) => {
 };
 
 
-// ================= DELETE USER =================
+// DELETE USER
 exports.deleteUser = (req, res) => {
+
   const { id } = req.params;
 
   const query = "DELETE FROM users WHERE id = ?";
