@@ -4,30 +4,21 @@ const cors = require("cors");
 const db = require("./config/db");
 
 const app = express();
+
 console.log("🔥 app.js is loaded");
 
-// Support multiple origins
-const allowedOrigins = [
-  "http://localhost:5173",
-  process.env.CLIENT_URL
-];
+// ===================== CORS =====================
 
 app.use(cors({
-  origin: function (origin, callback) {
-
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    console.log("Blocked by CORS:", origin);
-
-    callback(new Error("Not allowed by CORS"));
-  },
-
+  origin: [
+    "http://localhost:5173",
+    "https://ems-frontend-sooty.vercel.app"
+  ],
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
 }));
+
+// ===================== MIDDLEWARE =====================
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -54,13 +45,19 @@ app.use("/api/expenses", expenseRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/roles", roleRoutes);
 
-/* ===================== TEST ROUTE (ADD THIS HERE) ===================== */
- // IMPORTANT ADD THIS
+/* ===================== TEST ROUTE ===================== */
 
 app.get("/test-db", (req, res) => {
   db.query("SELECT NOW()", (err, result) => {
-    if (err) return res.json(err);
-    res.json(result);
+
+    if (err) {
+      return res.status(500).json(err);
+    }
+
+    res.json({
+      success: true,
+      database_time: result,
+    });
   });
 });
 
