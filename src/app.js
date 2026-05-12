@@ -8,28 +8,25 @@ console.log("🔥 app.js is loaded");
 
 // Support multiple origins
 const allowedOrigins = [
-  'https://ems-frontend-three-ivory.vercel.app',
-  'https://ems-frontend-iq55ma1ot-vaishnavi-powar-01s-projects.vercel.app',
-  // Add any other valid frontend URLs
+  "http://localhost:5173",
+  process.env.CLIENT_URL
 ];
 
-// Or read from environment variable as comma-separated list
-const clientUrls = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',') : [];
-
 app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
+  origin: function (origin, callback) {
+
     if (!origin) return callback(null, true);
-    
-    // Check if origin is allowed
-    if (allowedOrigins.indexOf(origin) !== -1 || clientUrls.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      console.log(`Blocked CORS request from: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
     }
+
+    console.log("Blocked by CORS:", origin);
+
+    callback(new Error("Not allowed by CORS"));
   },
-  credentials: true
+
+  credentials: true,
 }));
 
 app.use(express.json());
